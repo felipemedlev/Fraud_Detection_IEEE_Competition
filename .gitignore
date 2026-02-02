@@ -1,0 +1,5 @@
+# Data files
+data/
+
+# OS files
+.DS_Store
