@@ -6,7 +6,7 @@ A comprehensive fraud detection solution for the IEEE-CIS Fraud Detection Kaggle
 
 This fraud detection system identifies fraudulent transactions from a real-world e-commerce dataset. The solution leverages:
 
-- **Advanced Feature Engineering**: Client-level aggregations and behavioral patterns
+- **Advanced Feature Engineering**: Client level aggregations and behavioral patterns
 - **Ensemble Learning**: Combining LightGBM, XGBoost, and CatBoost models
 - **User Identification (UID)**: Novel approach to identify unique clients from transaction patterns
 - **Correlation-Based Feature Reduction**: Intelligent dimensionality reduction preserving predictive power
