@@ -2,7 +2,7 @@
 
 A comprehensive fraud detection solution for the IEEE-CIS Fraud Detection Kaggle Competition. This project achieves a **public score AUC of 0.945100** and **private score AUC of 0.924285** using ensemble machine learning techniques and advanced feature engineering.
 
-## 📊 Overview
+## Overview
 
 This fraud detection system identifies fraudulent transactions from a real-world e-commerce dataset. The solution leverages:
 
@@ -11,13 +11,13 @@ This fraud detection system identifies fraudulent transactions from a real-world
 - **User Identification (UID)**: Novel approach to identify unique clients from transaction patterns
 - **Correlation-Based Feature Reduction**: Intelligent dimensionality reduction preserving predictive power
 
-## 🎯 Competition Results
+## Competition Results
 
 - **Public Leaderboard**: 0.945100 AUC
 - **Private Leaderboard**: 0.924285 AUC
 - **Validation Score**: 0.9483 AUC (Rank Average Ensemble)
 
-## 🔍 Methodology
+## Methodology
 
 For a complete walkthrough of the fraud detection methodology, see [fraud_detection_modeling.ipynb](fraud_detection_modeling.ipynb).
 
@@ -130,7 +130,7 @@ Four ensemble methods compared:
 
 This simulates real-world deployment where the model sees only historical data.
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 Kaggle_Fraud/
@@ -145,7 +145,7 @@ Kaggle_Fraud/
 └── README.md                          # This file
 ```
 
-## 📈 Dataset
+## Dataset
 
 The dataset consists of transaction and identity data from IEEE-CIS:
 
@@ -169,7 +169,7 @@ The dataset consists of transaction and identity data from IEEE-CIS:
 
 > **Note**: Column semantics are intentionally masked for security, as this contains real transaction data.
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -191,7 +191,7 @@ The notebook executes the full pipeline:
 - Ensemble evaluation
 - Submission file generation
 
-## 🔑 Key Insights
+## Key Insights
 
 ### What Makes This Solution Work?
 
@@ -212,7 +212,7 @@ The model detects this through:
 - `UID_encoded_P_emaildomain_ct`: Multiple email domains
 - `UID_encoded_id_02_ct`: Multiple devices/IPs
 
-## 📊 Performance Metrics
+## Performance Metrics
 
 | Model | Validation AUC |
 |-------|----------------|
