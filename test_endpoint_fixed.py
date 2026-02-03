@@ -177,7 +177,7 @@ def test_endpoint():
         # Parse response
         result = json.loads(response['Body'].read().decode())
 
-        print("✅ Success!")
+        print("Success!")
         print()
         print("Response:")
         print(json.dumps(result, indent=2))
@@ -189,14 +189,14 @@ def test_endpoint():
             print(f"Fraud Probability: {fraud_prob:.4f}")
 
             if fraud_prob > 0.5:
-                print("⚠️  HIGH RISK - Transaction flagged as potential fraud")
+                print("HIGH RISK - Transaction flagged as potential fraud")
             elif fraud_prob > 0.2:
-                print("⚡ MEDIUM RISK - Transaction requires review")
+                print("MEDIUM RISK - Transaction requires review")
             else:
-                print("✅ LOW RISK - Transaction appears legitimate")
+                print("LOW RISK - Transaction appears legitimate")
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         import traceback
         traceback.print_exc()
         return False
