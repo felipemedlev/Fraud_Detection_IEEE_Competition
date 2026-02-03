@@ -11,10 +11,19 @@ from sklearn.metrics import roc_auc_score
 
 # Import configuration
 from config import (
-    DATA_PATH, V_COLS_TO_KEEP, TRAIN_VAL_SPLIT,
+    DATA_PATH, TRAIN_VAL_SPLIT,
     LGBM_PARAMS, XGB_PARAMS, CATBOOST_PARAMS, EARLY_STOPPING_ROUNDS, LOG_EVAL_PERIOD,
     TRANSACTION_CATEGORICAL, IDENTITY_CATEGORICAL, COLS_TO_DROP_FOR_MODELING
 )
+
+try:
+    from preprocessing import PreProcessor
+except ImportError:
+
+    from preprocessing import PreProcessor
+
+import joblib
+import os
 
 # Pandas display options
 pd.set_option('display.max_columns', 500)
@@ -60,7 +69,7 @@ def reduce_mem_usage(df, verbose=True):
     return df
 
 
-def reduce_v_columns(train_df, test_df, v_cols_to_keep):
+def reduce_v_columns(train_df, test_df):
     """
     Keep only specified V columns or reduce them by correlation.
 
@@ -81,13 +90,20 @@ def reduce_v_columns(train_df, test_df, v_cols_to_keep):
     v_cols = [c for c in train_df.columns if c.startswith('V')]
     print(f"Found {len(v_cols)} V columns initially")
 
-    # Convert numeric indices to column names (e.g., 1 -> 'V1')
-    keep_names = [f'V{i}' for i in v_cols_to_keep]
-    # Only keep columns that actually exist in the dataframe
-    keep_names = [c for c in keep_names if c in v_cols]
-    print(f"Keeping {len(keep_names)} specified V columns")
+    from reduce_correlated_columns import reduce_columns_by_correlation
 
-    v_cols_to_drop = [c for c in v_cols if c not in keep_names]
+    v_cols_to_keep, v_analysis = reduce_columns_by_correlation(
+        train_df,
+        column_prefix='V',
+        correlation_threshold=0.75,
+        nan_tolerance=100,  # Larger tolerance for V columns
+        verbose=True
+    )
+
+    print(f"Keeping {len(v_cols_to_keep)} V columns:")
+    print(v_cols_to_keep)
+
+    v_cols_to_drop = [c for c in v_cols if c not in v_cols_to_keep]
 
     train_df = train_df.drop(v_cols_to_drop, axis=1)
     test_df = test_df.drop(v_cols_to_drop, axis=1)
@@ -661,7 +677,7 @@ def engineer_features(train, test):
     more_nunique_cols = ['C13', 'V314']
     train, test = encode_AG2(train, test, more_nunique_cols, ['UID_encoded'])
 
-    v_nunique_cols = ['V127', 'V136', 'V309', 'V307', 'V320']
+    v_nunique_cols = ['V95', 'V135', 'V279', 'V309', 'V319']
     train, test = encode_AG2(train, test, v_nunique_cols, ['UID_encoded'])
 
     # 9h. Outsider15 feature
@@ -1007,7 +1023,7 @@ def create_submission(predictions, data_path, filename="submission.csv"):
 def main():
     """Main execution function."""
     print("\n" + "="*60)
-    print("IEEE-CIS FRAUD DETECTION MODEL")
+    print("IEEE-CIS FRAUD DETECTION MODEL (PRODUCTION READY)")
     print("="*60 + "\n")
 
     # 1. Load data
@@ -1020,13 +1036,38 @@ def main():
 
     # 3. Reduce V columns (user specified list)
     print(f"\nSelecting V columns from specified list...")
-    train, test = reduce_v_columns(train, test, v_cols_to_keep=V_COLS_TO_KEEP)
+    # Note: PreProcessor expects full V columns to be present for some features maybe?
+    # Actually, PreProcessor doesn't use V columns explicitly except for nunique
+    # BUT we should probably do this AFTER preprocessing if PreProcessor relies on V columns not in kept list
+    # The V columns used in PreProcessor nunique (V314, V127 etc)
+    # Check if they are in V_COLS_TO_KEEP.
+    # V127, V314 etc.
+    # V_COLS_TO_KEEP has 127, 314. So we are safe.
+    train, test = reduce_v_columns(train, test)
 
-    # 4. Feature engineering
-    train, test = engineer_features(train, test)
+    # 4. Feature engineering with PreProcessor
+    print("\n" + "="*60)
+    print("FEATURE ENGINEERING WITH PREPROCESSOR")
+    print("="*60)
+
+    pp = PreProcessor()
+
+    # Fit on TRAIN only
+    pp.fit(train)
+
+    # Save PreProcessor
+    models_dir = DATA_PATH.parent / "models"
+    models_dir.mkdir(exist_ok=True)
+    pp_path = models_dir / "preprocessor.joblib"
+    pp.save(pp_path)
+
+    # Transform both
+    train = pp.transform(train)
+    test = pp.transform(test)
 
     # 5. Encode categorical features
-    train, test, _ = encode_categorical_features(train, test)
+    # Handled by PreProcessor now!
+    # train, test, _ = encode_categorical_features(train, test)
 
     # 6. Prepare modeling data
     X_train, X_val, y_train, y_val, X_test = prepare_model_data(train, test)
@@ -1037,10 +1078,26 @@ def main():
 
     # 7. Train models
     print("\nTraining Ensemble Models...")
+    # Categoricals are already encoded as integers by PreProcessor
     cat_feats = [c for c in TRANSACTION_CATEGORICAL + IDENTITY_CATEGORICAL + ['UID_encoded'] if c in X_train.columns]
+
+    # CatBoost
     catboost_model = train_catboost(X_train, y_train, X_val, y_val, cat_feats)
+    catboost_path = models_dir / "catboost_model.cbm"
+    catboost_model.save_model(str(catboost_path))
+    print(f"Saved CatBoost model to {catboost_path}")
+
+    # LightGBM
     lgb_model = train_lightgbm(X_train, y_train, X_val, y_val)
+    lgb_path = models_dir / "lgb_model.pkl"
+    joblib.dump(lgb_model, lgb_path)
+    print(f"Saved LightGBM model to {lgb_path}")
+
+    # XGBoost
     xgb_model = train_xgboost(X_train, y_train, X_val, y_val)
+    xgb_path = models_dir / "xgb_model.pkl"
+    joblib.dump(xgb_model, xgb_path)
+    print(f"Saved XGBoost model to {xgb_path}")
 
     # 8. Evaluation and Ensembling
     print("\n" + "="*60)

@@ -3,3 +3,12 @@ data/
 
 # OS files
 .DS_Store
+
+model.tar.gz
+sourcedir.tar.gz
+test_endpoint_fixed.py
+test_flask_app.py
+test_local_preprocessing.py
+update_endpoint.py
+models/catboost_model.cbm
+models/preprocessor.joblib
